@@ -2,6 +2,8 @@
 
 Pot_O-Note-Pad is a simple text editor built using Python 3.12, PyQt5, and QScintilla.
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U71064LF)
+
 ## Dependencies
 
 To run Pot_O-Note-Pad, you need to install the following dependencies:
@@ -57,4 +59,6 @@ pyinstaller --onefile Pot_O_Note_Pad_v0.0.1-beta.py
 
 ---
 
-Feel free to adjust the README to include more details about features, usage instructions, or any other relevant information specific to your software.
+## Note
+
+If you want to help for developing this software, feel free.
