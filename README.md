@@ -4,6 +4,20 @@ Pot_O-Note-Pad is a simple text editor built using Python 3.12, PyQt5, and QScin
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U71064LF)
 
+## Features
+
+- Standard Notepad Function
+- Change Font
+- Lexers feature for Python, Javascript, HTML, CSS.
+- Fold and unfold code
+- Wrap text
+- User-friendly GUI
+- Comprehensive About section with license information
+
+## Screenshots
+
+![Screenshot](https://ik.imagekit.io/superman0my0id/superman.my.id/github/Screenshot-Pot-O_Note_Pad_v0.0.1-beta.png?updatedAt=1721112686706)
+
 ## Dependencies
 
 To run Pot_O-Note-Pad, you need to install the following dependencies:
