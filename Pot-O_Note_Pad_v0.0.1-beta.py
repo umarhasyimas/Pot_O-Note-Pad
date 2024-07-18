@@ -4,7 +4,7 @@ import textwrap
 from PyQt5.QtCore import Qt, QCoreApplication, QRect
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QMenu, QMessageBox, QFontDialog, QPushButton, QVBoxLayout, QWidget, QDialog, QVBoxLayout, QTextEdit
 from PyQt5.QtGui import QIcon, QColor, QFont
-from PyQt5.Qsci import QsciScintilla, QsciLexerPython, QsciLexerCSS, QsciLexerHTML, QsciLexerJavaScript, QsciLexerCustom
+from PyQt5.Qsci import QsciScintilla, QsciLexerPython, QsciLexerCSS, QsciLexerHTML, QsciLexerJavaScript, QsciLexerBatch, QsciLexerXML, QsciLexerCustom
 
 class LexerVaraq(QsciLexerCustom):
     def __init__(self, parent=None):
@@ -189,6 +189,8 @@ class PotONotePad(QMainWindow):
         self.lexer_js = QsciLexerJavaScript(self)
         self.lexer_html = QsciLexerHTML(self)
         self.lexer_css = QsciLexerCSS(self)
+        self.lexer_batch = QsciLexerBatch(self)
+        self.lexer_xml = QsciLexerXML(self)
 
     def setup_folding(self):
         self.editor.setFolding(QsciScintilla.BoxedTreeFoldStyle)
@@ -209,6 +211,32 @@ class PotONotePad(QMainWindow):
         self.editor.setMarkerForegroundColor(QColor("#FFFFFF"), QsciScintilla.SC_MARKNUM_FOLDER)
         self.editor.setMarkerBackgroundColor(QColor("#FF0000"), QsciScintilla.SC_MARKNUM_FOLDEROPEN)
         self.editor.setMarkerForegroundColor(QColor("#FFFFFF"), QsciScintilla.SC_MARKNUM_FOLDEROPEN)
+        
+        self.editor.setMarginSensitivity(2, True)
+        self.editor.marginClicked.connect(self.on_margin_clicked)
+        self.editor.setFolding(QsciScintilla.BoxedTreeFoldStyle)
+        self.editor.setFoldMarginColors(QColor("#99CC99"), QColor("#99CC99"))
+        
+    def set_language(self, language):
+        if language == "Python":
+            lexer = QsciLexerPython()
+        elif language == "JavaScript":
+            lexer = QsciLexerJavaScript()
+        elif language == "Batch":
+            lexer = QsciLexerBatch()
+        elif language == "HTML":
+            lexer = QsciLexerHTML()
+        elif language == "CSS":
+            lexer = QsciLexerCSS()
+        elif language == "XML":
+            lexer = QsciLexerXML()
+        else:
+            lexer = None  # Default lexer
+
+        if lexer:
+            lexer.setFoldComments(True)
+            lexer.setFoldCompact(False)
+            self.editor.setLexer(lexer)
 
     def setup_line_numbering(self):
         # Enable line numbers
@@ -219,8 +247,12 @@ class PotONotePad(QMainWindow):
 
     def setup_auto_indentation(self):
         self.editor.setAutoIndent(True)
-        self.editor.setIndentationsUseTabs(False)  # Use spaces for indentation
+        self.editor.setIndentationsUseTabs(True)  # Use spaces for indentation
         self.editor.setTabWidth(4)  # Set tab width to 4 spaces
+        self.editor.setBackspaceUnindents(True)
+        
+    def on_margin_clicked(self, margin, line, modifiers):
+        self.editor.foldLine(line)
 
     def create_actions(self):
         self.new_action = QAction(QIcon('images/new-document-48.png'), 'New', self)
@@ -252,6 +284,19 @@ class PotONotePad(QMainWindow):
         self.toggle_wrap_action.setCheckable(True)
         self.toggle_wrap_action.triggered.connect(self.toggle_line_wrapping)
         
+        # Create actions for line wrapping
+        self.wrap_none_action = QAction('No Wrap', self, checkable=True)
+        self.wrap_none_action.triggered.connect(self.set_wrap_mode_none)
+
+        self.wrap_word_action = QAction('Wrap Word', self, checkable=True)
+        self.wrap_word_action.triggered.connect(self.set_wrap_mode_word)
+
+        self.wrap_character_action = QAction('Wrap Character', self, checkable=True)
+        self.wrap_character_action.triggered.connect(self.set_wrap_mode_character)
+
+        self.wrap_whitespace_action = QAction('Wrap Whitespace', self, checkable=True)
+        self.wrap_whitespace_action.triggered.connect(self.set_wrap_mode_whitespace)
+        
         self.cut_action = QAction(QIcon('images/cut-48.png'), 'Cut', self)
         self.cut_action.setShortcut('Ctrl+X')
         self.cut_action.setStatusTip('Cut selected text')
@@ -276,6 +321,16 @@ class PotONotePad(QMainWindow):
         self.lexer_js_action.setStatusTip('Set lexer to JavaScript')
         self.lexer_js_action.setCheckable(True)
         self.lexer_js_action.triggered.connect(lambda: self.set_lexer("JavaScript"))
+        
+        self.lexer_batch_action = QAction(QIcon('images/batch-script-48.png'), 'Batch', self)
+        self.lexer_batch_action.setStatusTip('Set lexer to Batch')
+        self.lexer_batch_action.setCheckable(True)
+        self.lexer_batch_action.triggered.connect(lambda: self.set_lexer("Batch"))
+        
+        self.lexer_xml_action = QAction(QIcon('images/xml-file-48.png'), 'XML', self)
+        self.lexer_xml_action.setStatusTip('Set lexer to XML')
+        self.lexer_xml_action.setCheckable(True)
+        self.lexer_xml_action.triggered.connect(lambda: self.set_lexer("XML"))
 
         self.lexer_html_action = QAction(QIcon('images/html-48.png'), 'HTML', self)
         self.lexer_html_action.setStatusTip('Set lexer to HTML')
@@ -321,17 +376,25 @@ class PotONotePad(QMainWindow):
         edit_menu.addSeparator()  # Separator before edit actions
         edit_menu.addAction(self.change_font_action)
 
+        # Add these actions to the View menu
         view_menu = menubar.addMenu('&View')
         view_menu.addAction(self.toggle_wrap_action)
-        view_menu.addSeparator() 
+        view_menu.addSeparator()
+        view_menu.addAction(self.wrap_none_action)
+        view_menu.addAction(self.wrap_word_action)
+        view_menu.addAction(self.wrap_character_action)
+        view_menu.addAction(self.wrap_whitespace_action)
+        view_menu.addSeparator()
         view_menu.addAction(self.fold_all_action)
         view_menu.addAction(self.unfold_all_action)
-        view_menu.addSeparator() 
+        view_menu.addSeparator()
         view_menu.addAction(self.show_info_action)
 
         lexer_menu = menubar.addMenu('&Lexer')
         lexer_menu.addAction(self.lexer_python_action)
         lexer_menu.addAction(self.lexer_js_action)
+        lexer_menu.addAction(self.lexer_batch_action)
+        lexer_menu.addAction(self.lexer_xml_action)
         lexer_menu.addAction(self.lexer_html_action)
         lexer_menu.addAction(self.lexer_css_action)
         
@@ -345,13 +408,68 @@ class PotONotePad(QMainWindow):
         about_menu.addAction(self.software_info_action)
         
     def toggle_line_wrapping(self):
-        if self.editor.wrapMode() == QsciScintilla.WrapNone:
+        current_mode = self.editor.wrapMode()
+        if current_mode == QsciScintilla.WrapNone:
             self.editor.setWrapMode(QsciScintilla.WrapWord)
+            self.toggle_wrap_action.setChecked(True)
+        elif current_mode == QsciScintilla.WrapWord:
+            self.editor.setWrapMode(QsciScintilla.WrapCharacter)
+            self.toggle_wrap_action.setChecked(True)
+        elif current_mode == QsciScintilla.WrapCharacter:
+            self.editor.setWrapMode(QsciScintilla.WrapWhitespace)
             self.toggle_wrap_action.setChecked(True)
         else:
             self.editor.setWrapMode(QsciScintilla.WrapNone)
             self.toggle_wrap_action.setChecked(False)
             
+    def uncheck_all_wrap_modes(self):
+        self.wrap_none_action.blockSignals(True)
+        self.wrap_word_action.blockSignals(True)
+        self.wrap_character_action.blockSignals(True)
+        self.wrap_whitespace_action.blockSignals(True)
+        
+        self.wrap_none_action.setChecked(False)
+        self.wrap_word_action.setChecked(False)
+        self.wrap_character_action.setChecked(False)
+        self.wrap_whitespace_action.setChecked(False)
+        
+        self.wrap_none_action.blockSignals(False)
+        self.wrap_word_action.blockSignals(False)
+        self.wrap_character_action.blockSignals(False)
+        self.wrap_whitespace_action.blockSignals(False)
+
+    def set_wrap_mode_none(self):
+        self.uncheck_all_wrap_modes()
+        if self.editor.wrapMode() != QsciScintilla.WrapNone:
+            self.editor.setWrapMode(QsciScintilla.WrapNone)
+            self.wrap_none_action.setChecked(True)
+        else:
+            self.wrap_none_action.setChecked(False)
+
+    def set_wrap_mode_word(self):
+        self.uncheck_all_wrap_modes()
+        if self.editor.wrapMode() != QsciScintilla.WrapWord:
+            self.editor.setWrapMode(QsciScintilla.WrapWord)
+            self.wrap_word_action.setChecked(True)
+        else:
+            self.wrap_word_action.setChecked(False)
+
+    def set_wrap_mode_character(self):
+        self.uncheck_all_wrap_modes()
+        if self.editor.wrapMode() != QsciScintilla.WrapCharacter:
+            self.editor.setWrapMode(QsciScintilla.WrapCharacter)
+            self.wrap_character_action.setChecked(True)
+        else:
+            self.wrap_character_action.setChecked(False)
+
+    def set_wrap_mode_whitespace(self):
+        self.uncheck_all_wrap_modes()
+        if self.editor.wrapMode() != QsciScintilla.WrapWhitespace:
+            self.editor.setWrapMode(QsciScintilla.WrapWhitespace)
+            self.wrap_whitespace_action.setChecked(True)
+        else:
+            self.wrap_whitespace_action.setChecked(False)
+                
     def change_font(self):
         font, ok = QFontDialog.getFont(self.editor.font(), self)
         if ok:
@@ -368,7 +486,9 @@ class PotONotePad(QMainWindow):
             lexer = self.lexer_python
             self.lexer_python_action.setCheckable(True)  # Make the action checkable
             self.lexer_python_action.setChecked(True)
+            self.lexer_batch_action.setChecked(False)
             self.lexer_js_action.setChecked(False)
+            self.lexer_xml_action.setChecked(False)
             self.lexer_html_action.setChecked(False)
             self.lexer_css_action.setChecked(False)
             self.lexer_python_action.triggered.connect(lambda: self.set_lexer("Python"))
@@ -377,13 +497,37 @@ class PotONotePad(QMainWindow):
             self.lexer_python_action.setChecked(False)
             self.lexer_js_action.setCheckable(True)  # Make the action checkable
             self.lexer_js_action.setChecked(True)
+            self.lexer_batch_action.setChecked(False)
+            self.lexer_xml_action.setChecked(False)
             self.lexer_html_action.setChecked(False)
             self.lexer_css_action.setChecked(False)
             self.lexer_python_action.triggered.connect(lambda: self.set_lexer("JavaScript"))
+        elif language == "Batch":
+            lexer = self.lexer_batch
+            self.lexer_python_action.setChecked(False)
+            self.lexer_batch_action.setCheckable(True)  # Make the action checkable
+            self.lexer_batch_action.setChecked(True)
+            self.lexer_js_action.setChecked(False)
+            self.lexer_xml_action.setChecked(False)
+            self.lexer_html_action.setChecked(False)
+            self.lexer_css_action.setChecked(False)
+            self.lexer_python_action.triggered.connect(lambda: self.set_lexer("Batch"))
+        elif language == "XML":
+            lexer = self.lexer_xml
+            self.lexer_python_action.setChecked(False)
+            self.lexer_js_action.setChecked(False)
+            self.lexer_batch_action.setChecked(False)
+            self.lexer_xml_action.setCheckable(True)  # Make the action checkable
+            self.lexer_xml_action.setChecked(True)
+            self.lexer_html_action.setChecked(False)
+            self.lexer_css_action.setChecked(False)
+            self.lexer_python_action.triggered.connect(lambda: self.set_lexer("XML"))
         elif language == "HTML":
             lexer = self.lexer_html
             self.lexer_python_action.setChecked(False)
+            self.lexer_batch_action.setChecked(False)
             self.lexer_js_action.setChecked(False)
+            self.lexer_xml_action.setChecked(False)
             self.lexer_html_action.setCheckable(True)  # Make the action checkable
             self.lexer_html_action.setChecked(True)
             self.lexer_css_action.setChecked(False)
@@ -391,7 +535,9 @@ class PotONotePad(QMainWindow):
         elif language == "CSS":
             lexer = self.lexer_css
             self.lexer_python_action.setChecked(False)
+            self.lexer_batch_action.setChecked(False)
             self.lexer_js_action.setChecked(False)
+            self.lexer_xml_action.setChecked(False)
             self.lexer_html_action.setChecked(False)
             self.lexer_css_action.setCheckable(True)  # Make the action checkable
             self.lexer_css_action.setChecked(True)
@@ -441,7 +587,7 @@ class PotONotePad(QMainWindow):
     def open_file(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, 'Open File', '',
-            'Python Files (*.py);;HTML Files (*.html *.htm);;CSS Files (*.css);;JavaScript Files (*.js);;Text Files (*.txt);;All Files (*)'
+            'Python Files (*.py);;Batch Files (*.bat);;HTML Files (*.html *.htm);;XML Files (*.xml);;CSS Files (*.css);;JavaScript Files (*.js);;Text Files (*.txt);;All Files (*)'
         )
         if file_name:
             with open(file_name, 'r') as file:
@@ -460,7 +606,7 @@ class PotONotePad(QMainWindow):
 
     def save_file(self):
         options = QFileDialog.Options()
-        file_types = "Python Files (*.py);;JavaScript Files (*.js);;HTML Files (*.html);;CSS Files (*.css);;All Files (*)"
+        file_types = "Python Files (*.py);;JavaScript Files (*.js);;Batch Files (*.bat);;XML Files (*.xml);;HTML Files (*.html);;CSS Files (*.css);;All Files (*)"
         file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", file_types, options=options)
         
         if file_name:
@@ -470,6 +616,10 @@ class PotONotePad(QMainWindow):
                     file_name += '.py'
                 elif isinstance(self.editor.lexer(), QsciLexerJavaScript):
                     file_name += '.js'
+                elif isinstance(self.editor.lexer(), QsciLexerBatch):
+                    file_name += '.bat'
+                elif isinstance(self.editor.lexer(), QsciLexerXML):
+                    file_name += '.xml'
                 elif isinstance(self.editor.lexer(), QsciLexerHTML):
                     file_name += '.html'
                 elif isinstance(self.editor.lexer(), QsciLexerCSS):
