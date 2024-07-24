@@ -74,7 +74,7 @@ def create_shortcut(target_dir, icon_path):
 
 def main():
     script_path = os.path.abspath(sys.argv[0])
-    icon_path = os.path.join(os.path.dirname(script_path), "/images/pea.png")  # Adjust the icon path if needed
+    icon_path = os.path.join(os.path.dirname(script_path), "images/pea.png")  # Adjust the icon path if needed
 
     check_and_install_python()
     check_and_install_pip()
