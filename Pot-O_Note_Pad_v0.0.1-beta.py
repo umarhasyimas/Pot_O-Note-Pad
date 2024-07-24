@@ -139,6 +139,7 @@ class PotONotePad(QMainWindow):
         # Initialize editor widget
         self.editor = QsciScintilla()
         self.setCentralWidget(self.editor)
+        self.current_file = None
 
         # Set default font for editor
         font = QFont('Consolas', 10)  # Example: Consolas, 10 points
@@ -173,6 +174,9 @@ class PotONotePad(QMainWindow):
         x = int((screen_geometry.width() - self.width()) / 2)
         y = int((screen_geometry.height() - self.height()) / 2)
         self.move(x, y)  # Move the window to the calculated center position
+        
+        # Connect the textChanged signal to update the title
+        self.editor.textChanged.connect(self.update_title_bar)
 
         # Status bar
         self.statusBar()
@@ -583,11 +587,13 @@ class PotONotePad(QMainWindow):
 
     def new_file(self):
         self.editor.clear()
+        self.currentFile = None
+        self.setWindowTitle("Pot-O Note Pad - Untitled")
 
     def open_file(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, 'Open File', '',
-            'Python Files (*.py);;Batch Files (*.bat);;HTML Files (*.html *.htm);;XML Files (*.xml);;CSS Files (*.css);;JavaScript Files (*.js);;Text Files (*.txt);;All Files (*)'
+            'Text Files (*.txt);;Python Files (*.py);;Batch Files (*.bat);;HTML Files (*.html *.htm);;XML Files (*.xml);;CSS Files (*.css);;JavaScript Files (*.js);;All Files (*)'
         )
         if file_name:
             with open(file_name, 'r') as file:
@@ -602,12 +608,17 @@ class PotONotePad(QMainWindow):
             file_name = Path(self.current_file).name
             self.setWindowTitle(f'{file_name} - Pot-O Note Pad')
         else:
-            self.setWindowTitle('Pot-O Note Pad')
+            text = self.editor.text().strip()
+            if text == "":
+                self.setWindowTitle("Pot-O Note Pad - Untitled")
+            else:
+                self.setWindowTitle("Pot-O Note Pad - Unsaved Document")
 
     def save_file(self):
         options = QFileDialog.Options()
-        file_types = "Python Files (*.py);;JavaScript Files (*.js);;Batch Files (*.bat);;XML Files (*.xml);;HTML Files (*.html);;CSS Files (*.css);;All Files (*)"
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", file_types, options=options)
+        file_types = "Text Files (*.txt);;Python Files (*.py);;JavaScript Files (*.js);;Batch Files (*.bat);;XML Files (*.xml);;HTML Files (*.html);;CSS Files (*.css);;All Files (*)"
+        default_name = "Untitled" if not self.current_file else self.current_file
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", default_name, file_types, options=options)
         
         if file_name:
             # Determine the lexer language and save with appropriate extension
@@ -631,6 +642,8 @@ class PotONotePad(QMainWindow):
 
             with open(file_name, 'w') as file:
                 file.write(self.editor.text())
+            self.current_file = file_name
+            self.update_title_bar()
 
     def exit_app(self):
         # Create a confirmation dialog with a question
