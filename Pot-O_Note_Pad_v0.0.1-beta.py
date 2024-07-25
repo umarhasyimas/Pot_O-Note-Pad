@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt, QCoreApplication, QRect
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QMenu, QMessageBox, QFontDialog, QPushButton, QVBoxLayout, QWidget, QDialog, QVBoxLayout, QTextEdit
 from PyQt5.QtGui import QIcon, QColor, QFont
 from PyQt5.Qsci import QsciScintilla, QsciLexerPython, QsciLexerCSS, QsciLexerHTML, QsciLexerJavaScript, QsciLexerBatch, QsciLexerXML, QsciLexerCustom
+from find_replace_dialog import FindReplaceDialog
 
 class LexerVaraq(QsciLexerCustom):
     def __init__(self, parent=None):
@@ -139,6 +140,8 @@ class PotONotePad(QMainWindow):
         # Initialize editor widget
         self.editor = QsciScintilla()
         self.setCentralWidget(self.editor)
+        self.findReplaceDialog = FindReplaceDialog(self)
+        
         self.current_file = None
 
         # Set default font for editor
@@ -279,6 +282,21 @@ class PotONotePad(QMainWindow):
         self.exit_action.setStatusTip('Exit application')
         self.exit_action.triggered.connect(self.exit_app)
         
+        self.undo_action = QAction(QIcon('images/undo-48.png'), 'Undo', self)
+        self.undo_action.setShortcut('Ctrl+Z')
+        self.undo_action.setStatusTip('Undo')
+        self.undo_action.triggered.connect(self.editor.undo)
+
+        self.redo_action = QAction(QIcon('images/redo-48.png'), 'Redo', self)
+        self.redo_action.setShortcut('Ctrl+Y')
+        self.redo_action.setStatusTip('Redo')
+        self.redo_action.triggered.connect(self.editor.redo)
+        
+        self.find_replace_action = QAction(QIcon('images/find-and-replace-48.png'), 'Find and Replace', self)
+        self.find_replace_action.setShortcut('Ctrl+F')
+        self.find_replace_action.setStatusTip('Find and Replace')
+        self.find_replace_action.triggered.connect(self.showFindReplaceDialog)
+        
         self.change_font_action = QAction(QIcon('images/choose-font-48.png'), 'Change Font', self)
         self.change_font_action.setStatusTip('Change the editor font')
         self.change_font_action.triggered.connect(self.change_font)
@@ -374,9 +392,14 @@ class PotONotePad(QMainWindow):
         file_menu.addAction(self.exit_action)
         
         edit_menu = menubar.addMenu('&Edit')
+        edit_menu.addAction(self.undo_action)
+        edit_menu.addAction(self.redo_action)
+        edit_menu.addSeparator()
         edit_menu.addAction(self.cut_action)
         edit_menu.addAction(self.copy_action)
         edit_menu.addAction(self.paste_action)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self.find_replace_action)
         edit_menu.addSeparator()  # Separator before edit actions
         edit_menu.addAction(self.change_font_action)
 
@@ -473,6 +496,10 @@ class PotONotePad(QMainWindow):
             self.wrap_whitespace_action.setChecked(True)
         else:
             self.wrap_whitespace_action.setChecked(False)
+            
+    def showFindReplaceDialog(self):
+        self.findReplaceDialog.populate_find_input()
+        self.findReplaceDialog.show()
                 
     def change_font(self):
         font, ok = QFontDialog.getFont(self.editor.font(), self)
