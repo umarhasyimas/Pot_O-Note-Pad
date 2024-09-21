@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 import os
 import textwrap
 from PyQt5.QtCore import Qt, QCoreApplication, QRect
@@ -132,9 +133,12 @@ class LexerVaraq(QsciLexerCustom):
                 levelPrev = levelCurrent
 
 class PotONotePad(QMainWindow):
-    def __init__(self):
+    def __init__(self, file_path=None):
         super().__init__()
+        self.current_file = file_path  # Set the current file path if passed
         self.initUI()
+        if self.current_file:
+            self.open_file(self.current_file)  # Open file passed via 'Open With'
 
     def initUI(self):
         # Initialize editor widget
@@ -169,7 +173,7 @@ class PotONotePad(QMainWindow):
 
         # Set window properties
         self.setGeometry(300, 300, 800, 600)
-        self.setWindowTitle('Pot-O Note Pad v0.0.1-beta')
+        self.setWindowTitle('Pot-O Note Pad v0.0.3-beta')
         self.setWindowIcon(QIcon('images/pea.png'))
         
         # Calculate center position of the screen
@@ -270,7 +274,7 @@ class PotONotePad(QMainWindow):
         self.open_action = QAction(QIcon('images/opened-folder-48.png'), 'Open', self)
         self.open_action.setShortcut('Ctrl+O')
         self.open_action.setStatusTip('Open an existing file')
-        self.open_action.triggered.connect(self.open_file)
+        self.open_action.triggered.connect(self.open_file_dialog)
 
         self.save_action = QAction(QIcon('images/save-48.png'), 'Save', self)
         self.save_action.setShortcut('Ctrl+S')
@@ -617,29 +621,30 @@ class PotONotePad(QMainWindow):
         self.currentFile = None
         self.setWindowTitle("Pot-O Note Pad - Untitled")
 
-    def open_file(self):
+    def open_file_dialog(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, 'Open File', '',
             'Text Files (*.txt);;Python Files (*.py);;Batch Files (*.bat);;HTML Files (*.html *.htm);;XML Files (*.xml);;CSS Files (*.css);;JavaScript Files (*.js);;All Files (*)'
         )
         if file_name:
-            with open(file_name, 'r') as file:
+            self.open_file(file_name)
+
+    def open_file(self, file_path):
+        try:
+            with open(file_path, 'r') as file:
                 content = file.read()
                 self.editor.setText(content)
-                self.current_file = file_name
+                self.current_file = file_path
                 self.update_title_bar()
-                
+        except Exception as e:
+            print(f"Error opening file: {e}")
+
     def update_title_bar(self):
         if self.current_file:
-            from pathlib import Path
             file_name = Path(self.current_file).name
             self.setWindowTitle(f'{file_name} - Pot-O Note Pad')
         else:
-            text = self.editor.text().strip()
-            if text == "":
-                self.setWindowTitle("Pot-O Note Pad - Untitled")
-            else:
-                self.setWindowTitle("Pot-O Note Pad - Unsaved Document")
+            self.setWindowTitle('Pot-O Note Pad')
 
     def save_file(self):
         options = QFileDialog.Options()
@@ -676,7 +681,7 @@ class PotONotePad(QMainWindow):
         # Create a confirmation dialog with a question
         reply = QMessageBox.question(
             self,
-            'Pot-O Note Pad v0.0.1-beta',
+            'Pot-O Note Pad v0.0.3-beta',
             "Are you sure you want to quit?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -699,7 +704,7 @@ class PotONotePad(QMainWindow):
 
         # Set the text with the software information and MIT License
         info_text = (
-            "Pot-O Note Pad v0.0.1-beta\n\n"
+            "Pot-O Note Pad v0.0.3-beta\n\n"
             "Developed by Pot-O Software <Muhammad Umar Hasyim Ashari>\n\n"
             "Copyright © 2024 <Muhammad Umar Hasyim Ashari>\n\n"
             "License: MIT License\n\n"
@@ -738,6 +743,8 @@ class PotONotePad(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    # Check if a file path is passed as an argument (when using "Open with")
+    file_path = sys.argv[1] if len(sys.argv) > 1 else None
     app.setStyle('Fusion')  # Set Fusion style for consistent appearance
     editor = PotONotePad()
     editor.show()
