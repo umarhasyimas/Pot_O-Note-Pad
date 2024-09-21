@@ -173,7 +173,7 @@ class PotONotePad(QMainWindow):
 
         # Set window properties
         self.setGeometry(300, 300, 800, 600)
-        self.setWindowTitle('Pot-O Note Pad v0.0.3-beta')
+        self.setWindowTitle('Pot-O Note Pad v0.0.3-beta.1')
         self.setWindowIcon(QIcon('images/pea.png'))
         
         # Calculate center position of the screen
@@ -681,7 +681,7 @@ class PotONotePad(QMainWindow):
         # Create a confirmation dialog with a question
         reply = QMessageBox.question(
             self,
-            'Pot-O Note Pad v0.0.3-beta',
+            'Pot-O Note Pad v0.0.3-beta.1',
             "Are you sure you want to quit?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -704,7 +704,7 @@ class PotONotePad(QMainWindow):
 
         # Set the text with the software information and MIT License
         info_text = (
-            "Pot-O Note Pad v0.0.3-beta\n\n"
+            "Pot-O Note Pad v0.0.3-beta.1\n\n"
             "Developed by Pot-O Software <Muhammad Umar Hasyim Ashari>\n\n"
             "Copyright © 2024 <Muhammad Umar Hasyim Ashari>\n\n"
             "License: MIT License\n\n"
