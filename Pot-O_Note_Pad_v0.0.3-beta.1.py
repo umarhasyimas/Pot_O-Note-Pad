@@ -3,18 +3,25 @@ import sys
 from pathlib import Path
 import os
 import textwrap
-from PyQt5.QtCore import Qt, QCoreApplication, QRect
+from PyQt5.QtCore import QSize, Qt, QCoreApplication, QRect
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QMenu, QMessageBox, QFontDialog, QPushButton, QVBoxLayout, QWidget, QDialog, QVBoxLayout, QTextEdit
-from PyQt5.QtGui import QIcon, QColor, QFont
+from PyQt5.QtGui import QIcon, QColor, QFont, QImage
 from PyQt5.Qsci import QsciDocument, QsciPrinter, QsciScintilla, QsciLexerPython, QsciLexerCSS, QsciLexerHTML, QsciLexerJavaScript, QsciLexerBatch, QsciLexerXML, QsciLexerCustom
 import win32print
 import win32api
+from enum import Enum
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from find_replace_dialog import FindReplaceDialog
 
 # Get the directory where this script is located
 BASE_DIR = Path(__file__).resolve().parent
+
+class FoldingStyle(Enum):
+    EXTENDED_FOLDING_STYLE = QsciScintilla.SC_FOLDACTION_EXPAND
+    FOLDING_STYLE = QsciScintilla.SCI_FOLDDISPLAYTEXTSETSTYLE
+    BOXED_TREE_FOLDING_STYLE = QsciScintilla.SC_FOLDDISPLAYTEXT_BOXED
+    NO_FOLDING_STYLE = QsciScintilla.SC_FOLDDISPLAYTEXT_HIDDEN
 
 class LexerVaraq(QsciLexerCustom):
     def __init__(self, parent=None):
@@ -29,6 +36,12 @@ class LexerVaraq(QsciLexerCustom):
             "moH", "mobmoH", "DuD", "tlhoch", "Qo'moH", "nIHghoS", "poSghoS", "law'", "puS'",
             "rap'", "law'rap'", "rapbe'", "pagh'", "taH", "je", "joq", "ghap", "ghobe'", "cha'",
             "'Ij", "bep", "chu'", "DonwI'", "chu'tut", "nuqDaq_jIH", "pongmI'", "taghDe'"
+            # Add Python keywords
+            "False", "None", "True", "and", "as", "assert", "async", "await",
+            "break", "class", "continue", "def", "del", "elif", "else",
+            "except", "finally", "for", "from", "global", "if", "import",
+            "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise",
+            "return", "try", "while", "with", "yield"
         ])
 
     def language(self):
@@ -45,7 +58,7 @@ class LexerVaraq(QsciLexerCustom):
             return "Number"
         elif style == 5:
             return "Identifier"
-        return ""
+        return "Default"
 
     def styleText(self, start, end):
         editor = self.editor()
@@ -113,32 +126,26 @@ class LexerVaraq(QsciLexerCustom):
         if editor is None:
             return
 
-        # Initialize folding variables
+        # Get the line of the current position
         lineCurrent = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, start)
+
         levelPrev = editor.SendScintilla(editor.SCI_GETFOLDLEVEL, lineCurrent) & 0xFFFF
         levelCurrent = levelPrev
 
-        for pos in range(start, end):
-            ch = editor.SendScintilla(editor.SCI_GETCHARAT, pos)
+        # Check lines for foldable blocks based on keywords or indentation
+        for line in range(lineCurrent, editor.lines()):
+            line_text = editor.text(line).strip()
 
-            if ch == ord('{'):
+            # Increase fold level if a function, class, or control statement starts
+            if line_text.startswith(("def", "class", "if", "else", "elif", "for", "while", "try", "except")):
                 levelCurrent += 1
-            elif ch == ord('}'):
+                editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, levelCurrent | QsciScintilla.SC_FOLDLEVELHEADERFLAG)
+            elif line_text == "":
+                # Decrease fold level for empty lines (which usually indicate block end in Python)
                 levelCurrent -= 1
-            elif ch == ord('d') and editor.SendScintilla(editor.SCI_GETWORDCHARS, pos).startswith("def "):
-                levelCurrent += 1
-            elif ch == ord('\n'):
-                levelCurrent = levelPrev
-            
-            atEOL = ch == ord('\r') or ch == ord('\n')
-            if atEOL or pos == end - 1:
-                lev = levelPrev
-                if levelCurrent > levelPrev:
-                    lev |= QsciScintilla.SC_FOLDLEVELHEADERFLAG
-                if lev != editor.SendScintilla(editor.SCI_GETFOLDLEVEL, lineCurrent):
-                    editor.SendScintilla(editor.SCI_SETFOLDLEVEL, lineCurrent, lev)
-                lineCurrent += 1
-                levelPrev = levelCurrent
+                editor.SendScintilla(editor.SCI_SETFOLDLEVEL, line, levelCurrent)
+
+            levelPrev = levelCurrent
 
 class PotONotePad(QMainWindow):
     def __init__(self, file_path=None):
@@ -156,9 +163,12 @@ class PotONotePad(QMainWindow):
         self.findReplaceDialog = FindReplaceDialog(self)
         
         self.current_file = None
+        
+        # Setup folding
+        self.setup_folding()
 
         # Set default font for editor
-        font = QFont('Consolas', 10)  # Example: Consolas, 10 points
+        font = QFont('Consolas', 12)  # Example: Consolas, 10 points
         self.editor.setFont(font)
         font.setFixedPitch(True)
 
@@ -171,7 +181,7 @@ class PotONotePad(QMainWindow):
         self.setup_folding()
         self.setup_line_numbering()
         self.setup_auto_indentation()
-        self.editor.setMarginWidth(2, 20)
+        self.editor.setMarginWidth(1, 25)
         self.editor.setFolding(QsciScintilla.BoxedTreeFoldStyle)
         lexer = LexerVaraq()
         self.editor.setLexer(lexer)
@@ -182,7 +192,7 @@ class PotONotePad(QMainWindow):
 
         # Set window properties
         self.setGeometry(300, 300, 800, 600)
-        self.setWindowTitle('Pot-O Note Pad v0.0.3-beta.1')
+        self.setWindowTitle('Pot-O Note Pad v0.0.3-beta.3')
         self.setWindowIcon(QIcon(str(BASE_DIR / 'images' / 'pea.png')))
         
         # Calculate center position of the screen
@@ -215,30 +225,23 @@ class PotONotePad(QMainWindow):
         self.lexer_xml = QsciLexerXML(self)
 
     def setup_folding(self):
+        # Enable folding with BoxedTree style
         self.editor.setFolding(QsciScintilla.BoxedTreeFoldStyle)
-        self.editor.setMarginWidth(2, 12)
-        self.editor.setMarginMarkerMask(2, 0x1FFFFFF)
 
-        # Define markers for folding
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDEROPEN, QsciScintilla.SC_MARK_MINUS)
+        # Define folding margin width (the space where the fold markers will appear)
+        self.editor.setMarginWidth(2, 20)
+
+        # Set fold margin colors
+        self.editor.setFoldMarginColors(QColor("#99CC99"), QColor("#D3D3D3"))
+
+        # Define markers for folding (folding plus and minus signs)
         self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDER, QsciScintilla.SC_MARK_PLUS)
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDERSUB, QsciScintilla.SC_MARK_VLINE)
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDERTAIL, QsciScintilla.SC_MARK_LCORNER)
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDEREND, QsciScintilla.SC_MARK_PLUS)
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDEROPENMID, QsciScintilla.SC_MARK_MINUS)
-        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDERMIDTAIL, QsciScintilla.SC_MARK_TCORNER)
+        self.editor.markerDefine(QsciScintilla.SC_MARKNUM_FOLDEROPEN, QsciScintilla.SC_MARK_MINUS)
 
-        # Set colors for markers
-        self.editor.setMarkerBackgroundColor(QColor("#FF0000"), QsciScintilla.SC_MARKNUM_FOLDER)
-        self.editor.setMarkerForegroundColor(QColor("#FFFFFF"), QsciScintilla.SC_MARKNUM_FOLDER)
-        self.editor.setMarkerBackgroundColor(QColor("#FF0000"), QsciScintilla.SC_MARKNUM_FOLDEROPEN)
-        self.editor.setMarkerForegroundColor(QColor("#FFFFFF"), QsciScintilla.SC_MARKNUM_FOLDEROPEN)
-        
-        self.editor.setMarginSensitivity(2, True)
-        self.editor.marginClicked.connect(self.on_margin_clicked)
-        self.editor.setFolding(QsciScintilla.BoxedTreeFoldStyle)
-        self.editor.setFoldMarginColors(QColor("#99CC99"), QColor("#99CC99"))
-        
+        # Assign the custom lexer for Varaq
+        lexer = LexerVaraq(self.editor)
+        self.editor.setLexer(lexer)
+
     def set_language(self, language):
         if language == "Python":
             lexer = QsciLexerPython()
@@ -259,6 +262,22 @@ class PotONotePad(QMainWindow):
             lexer.setFoldComments(True)
             lexer.setFoldCompact(False)
             self.editor.setLexer(lexer)
+            
+    def create_lexer_actions(self):
+        lexers = {
+            "Python": QsciLexerPython,
+            "JavaScript": QsciLexerJavaScript,
+            "Batch": QsciLexerBatch,
+            "HTML": QsciLexerHTML,
+            "CSS": QsciLexerCSS,
+            "XML": QsciLexerXML
+        }
+
+        for language, lexer_class in lexers.items():
+            action = QAction(QIcon(str(BASE_DIR / f'images/{language.lower()}-48.png')), language, self)
+            action.setCheckable(True)
+            action.triggered.connect(lambda checked, l=lexer_class: self.set_language(language))
+            self.menuBar().addMenu('&Lexer').addAction(action)
 
     def setup_line_numbering(self):
         # Enable line numbers
@@ -274,6 +293,7 @@ class PotONotePad(QMainWindow):
         self.editor.setBackspaceUnindents(True)
         
     def on_margin_clicked(self, margin, line, modifiers):
+        print(f"Margin clicked: {margin}, Line: {line}, Modifiers: {modifiers}")
         self.editor.foldLine(line)
 
     def create_actions(self):
@@ -694,7 +714,7 @@ class PotONotePad(QMainWindow):
     def new_file(self):
         self.editor.clear()
         self.currentFile = None
-        self.setWindowTitle("Untitled - Pot-O Note Pad v0.0.3-beta.1")
+        self.setWindowTitle("Untitled - Pot-O Note Pad v0.0.3-beta.3")
 
     def open_file_dialog(self):
         file_name, _ = QFileDialog.getOpenFileName(
@@ -717,9 +737,9 @@ class PotONotePad(QMainWindow):
     def update_title_bar(self):
         if self.current_file:
             file_name = Path(self.current_file).name
-            title = f"{'*' if self.unsaved_changes else ''}{file_name} - Pot-O Note Pad v0.0.3-beta.1"
+            title = f"{'*' if self.unsaved_changes else ''}{file_name} - Pot-O Note Pad v0.0.3-beta.3"
         else:
-            title = f"{'*' if self.unsaved_changes else ''}Untitled - Pot-O Note Pad v0.0.3-beta.1"
+            title = f"{'*' if self.unsaved_changes else ''}Untitled - Pot-O Note Pad v0.0.3-beta.3"
         self.setWindowTitle(title)
 
     def save_file(self):
@@ -758,7 +778,7 @@ class PotONotePad(QMainWindow):
         # Create a confirmation dialog with a question
         reply = QMessageBox.question(
             self,
-            'Pot-O Note Pad v0.0.3-beta.1',
+            'Pot-O Note Pad v0.0.3-beta.3',
             "Are you sure you want to quit?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -781,7 +801,7 @@ class PotONotePad(QMainWindow):
 
         # Set the text with the software information and MIT License
         info_text = (
-            "Pot-O Note Pad v0.0.3-beta.1\n\n"
+            "Pot-O Note Pad v0.0.3-beta.3\n\n"
             "Developed by Pot-O Software <Muhammad Umar Hasyim Ashari>\n\n"
             "Copyright © 2024 <Muhammad Umar Hasyim Ashari>\n\n"
             "License: MIT License\n\n"
