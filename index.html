@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pot-O Note Pad - Simple Text Editor with Syntax Highlighting</title>
+    <style>
+        :root {
+            --primary-color: #10a37f;
+            --secondary-color: #e0f5ef;
+            --border-color: #8ad5c0;
+            --text-color: #333333;
+            --light-bg: #f7f7f7;
+            --white: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.5;
+            font-family: "Trebuchet MS", Verdana, Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        header {
+            text-align: center;
+            padding: 25px 0 15px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        h2 {
+            font-size: 1.6em;
+            color: var(--primary-color);
+            margin: 25px 0 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tagline {
+            font-size: 1.1em;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .container {
+            padding: 15px 0;
+        }
+        
+        .download-container {
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 5px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 8px 20px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            border: 1px solid #0d8c6d;
+        }
+        
+        .download-btn:hover {
+            background-color: #0d8c6d;
+        }
+
+        .zip-version {
+            font-weight: normal;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .version {
+            display: block;
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .features {
+            margin: 25px 0;
+        }
+        
+        .features ul {
+            margin-left: 25px;
+            list-style-type: square;
+            color: var(--primary-color);
+        }
+        
+        .features ul li {
+            margin-bottom: 10px;
+        }
+        
+        .features ul li span {
+            color: var(--text-color);
+        }
+        
+        .screenshot {
+            text-align: center;
+            margin: 25px 0;
+            padding: 10px;
+            background: var(--white);
+            border: 1px solid #ddd;
+        }
+        
+        .screenshot img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #eee;
+        }
+        
+        .caption {
+            display: block;
+            margin-top: 8px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .lexer-demo {
+            background-color: var(--white);
+            padding: 15px;
+            border: 1px solid #ddd;
+            font-family: "Courier New", monospace;
+            overflow-x: auto;
+            line-height: 1.4;
+            margin: 20px 0;
+        }
+        
+        .lexer-demo .keyword {
+            color: #0000ff;
+        }
+        
+        .lexer-demo .string {
+            color: #a31515;
+        }
+        
+        .lexer-demo .comment {
+            color: #008000;
+        }
+        
+        .lexer-demo .number {
+            color: #09885a;
+        }
+        
+        .languages {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .languages span {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            padding: 5px 10px;
+            margin: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: var(--secondary-color);
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        footer {
+            margin-top: 30px;
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .clear {
+            clear: both;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 0 10px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pot-O Note Pad</h1>
+        <p class="tagline">A simple Notepad clone with Syntax Highlighting</p>
+    </header>
+
+    <div class="container">
+        <div class="download-container">
+            <p>Download the latest version of Pot-O Note Pad for Windows</p>
+            <a href="#" class="download-btn">Download Now</a>
+            <p><a href="#" class="zip-version">ZIP Version</a></p>
+            <span class="version">Version 1.7.4 | 25.3 MB</span>
+        </div>
+        
+        <h2>About Pot-O Note Pad</h2>
+        <p>Pot-O Note Pad is a lightweight, free text editor for Windows that enhances the basic Notepad functionality by adding syntax highlighting for various programming languages. It's designed to be simple and fast, while still providing essential features for programmers and text editing.</p>
+        
+        <div class="screenshot">
+            <img src="Pot-O-Note-Pad-Screenshot.gif" alt="Pot-O Note Pad Screenshot" />
+            <span class="caption">Pot-O Note Pad with syntax highlighting for JavaScript</span>
+        </div>
+        
+        <h2>Features</h2>
+        <div class="features">
+            <ul>
+                <li><span><strong>Syntax Highlighting</strong> - Built-in lexers provide color coding for various programming languages</span></li>
+                <li><span><strong>Familiar Interface</strong> - Works just like Windows Notepad, but with added features: <strong>Print to PDF</strong> and <strong>View Only</strong> Mode</span></li>
+                <li><span><strong>Fast & Lightweight</strong> - Loads quickly and uses minimal system resources</span></li>
+                <li><span><strong>Basic Text Editing</strong> - All the standard editing features you expect: cut, copy, paste, find, replace, line numbers, wrap mode</span></li>
+                <li><span><strong>Freeware</strong> - Completely free for personal and commercial use</span></li>
+            </ul>
+        </div>
+        
+        <h2>Syntax Highlighting</h2>
+        <p>Unlike the standard Windows Notepad, <strong>Pot-O Note Pad</strong> can detect and highlight syntax elements in your code, making it easier to read and identify different parts of your program:</p>
+        
+        <div class="lexer-demo">
+<span class="keyword">function</span> <span>calculateSum</span>(<span>a</span>, <span>b</span>) {
+  <span class="comment">// This is a simple function that adds two numbers</span>
+  <span class="keyword">return</span> <span class="number">a</span> + <span class="number">b</span>;
+}
+
+<span class="keyword">const</span> <span>result</span> = calculateSum(<span class="number">5</span>, <span class="number">10</span>);
+<span class="keyword">const</span> <span>message</span> = <span class="string">"The sum is: "</span> + result;
+<span>console</span>.log(message);
+</div>
+        
+        <h2>Supported Languages</h2>
+        <p>Pot-O Note Pad currently includes syntax highlighting for the following languages and many more:</p>
+        
+        <div class="languages">
+            <span>HTML</span>
+            <span>CSS</span>
+            <span>JavaScript</span>
+            <span>Python</span>
+            <span>C/C++</span>
+            <span>C#</span>
+            <span>Java</span>
+            <span>PHP</span>
+            <span>XML</span>
+        </div>
+        
+        <h2>System Requirements</h2>
+        <table>
+            <tr>
+                <th>Requirement</th>
+                <th>Minimum</th>
+                <th>Recommended</th>
+            </tr>
+            <tr>
+                <td>Operating System</td>
+                <td>Windows 7</td>
+                <td>Windows 10/11</td>
+            </tr>
+            <tr>
+                <td>Memory</td>
+                <td>256 MB RAM</td>
+                <td>512 MB RAM or more</td>
+            </tr>
+            <tr>
+                <td>Disk Space</td>
+                <td>100 MB free space</td>
+                <td>200 MB free space</td>
+            </tr>
+        </table>
+        
+        <h2>Installation</h2>
+        <p>Pot-O Note Pad installation are simple and easy. Simply download the EXE file, run the executable and follow the instruction. You can also create a shortcut to it on your desktop or pin it to your taskbar for easy access.</p>
+        
+        <div class="download-container">
+            <p>Get started with Pot-O Note Pad today</p>
+            <a href="#" class="download-btn">Download Now</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Copyright © 2024-2025 Pot-O Software (Muhammad Umar Hasyim Ashari)</p>
+        <p>Pot-O Note Pad is free software. Feel free to use and distribute it according to the license terms.</p>
+    </footer>
+</body>
+</html>
