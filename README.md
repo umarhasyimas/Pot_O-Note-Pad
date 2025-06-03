@@ -54,17 +54,22 @@ This software is distributed in **binary format only**.
 
 ## 🖼 Screenshots
 
-To embed images in your README (when available), you can use this Markdown format:
+Below are some previews of Pot-O Note Pad in action:
 
-```markdown
-![1. Pot-O Note Pad version 3.2.5 Text Mode.png](Pot-O_Note_Pad_version_3.2.5_Text_Mode.png)
-![2nd Screenshot](/2. Pot-O Note Pad version 3.2.5 Code Folding Mode.png)
-![3rd Screenshot](3. Pot-O Note Pad version 3.2.5 Syntax Choices.png)
-![4th Screenshot](4. Pot-O Note Pad version 3.2.5 Toolbar Mode.png)
-![5th Screenshot](5. Pot-O Note Pad version 3.2.5 Creator and License.png)
-```
+![1. Text Mode](./Pot-O_Note_Pad_version_3.2.5_Text_Mode.png)  
+*Pot-O Note Pad in plain text editing mode*
 
-> 📸 You are encouraged to include screenshots in a `/screenshots/` folder within the repository to showcase features.
+![2. Code Folding Mode](./2.%20Pot-O%20Note%20Pad%20version%203.2.5%20Code%20Folding%20Mode.png)  
+*Code folding feature enabled*
+
+![3. Syntax Choices](./3.%20Pot-O%20Note%20Pad%20version%203.2.5%20Syntax%20Choices.png)  
+*Language lexer selection menu*
+
+![4. Toolbar Mode](./4.%20Pot-O%20Note%20Pad%20version%203.2.5%20Toolbar%20Mode.png)  
+*Toolbar with common editing actions*
+
+![5. Creator and License](./5.%20Pot-O%20Note%20Pad%20version%203.2.5%20Creator%20and%20License.png)  
+*About dialog with license and creator information*
 
 ---
 
