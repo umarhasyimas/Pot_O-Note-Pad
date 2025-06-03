@@ -57,7 +57,7 @@ This software is distributed in **binary format only**.
 To embed images in your README (when available), you can use this Markdown format:
 
 ```markdown
-![1. Pot-O Note Pad version 3.2.5 Text Mode.png](1. Pot-O Note Pad version 3.2.5 Text Mode.png)
+![1. Pot-O Note Pad version 3.2.5 Text Mode.png](Pot-O_Note_Pad_version_3.2.5_Text_Mode.png)
 ![2nd Screenshot](/2. Pot-O Note Pad version 3.2.5 Code Folding Mode.png)
 ![3rd Screenshot](3. Pot-O Note Pad version 3.2.5 Syntax Choices.png)
 ![4th Screenshot](4. Pot-O Note Pad version 3.2.5 Toolbar Mode.png)
